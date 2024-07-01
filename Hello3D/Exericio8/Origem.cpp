@@ -1,12 +1,4 @@
-/* Hello Triangle - código adaptado de https://learnopengl.com/#!Getting-started/Hello-Triangle
- *
- * Adaptado por Rossana Baptista Queiroz
- * para a disciplina de Processamento Gráfico - Jogos Digitais - Unisinos
- * Versão inicial: 7/4/2017
- * Última atualização em 12/05/2023
- *
- */
-
+// Aluno: Diogo Garbinato de Fagundes		Matrícula: 1189650
 #include <iostream>
 #include <string>
 #include <assert.h>
@@ -65,18 +57,9 @@ int main()
 	// Inicialização da GLFW
 	glfwInit();
 
-	//Muita atenção aqui: alguns ambientes não aceitam essas configurações
-	//Você deve adaptar para a versão do OpenGL suportada por sua placa
-	//Sugestão: comente essas linhas de código para desobrir a versão e
-	//depois atualize (por exemplo: 4.5 com 4 e 5)
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	//glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-
-	//Essencial para computadores da Apple
-//#ifdef __APPLE__
-//	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-//#endif
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Criação da janela GLFW
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Ola 3D -- Diogo!", nullptr, nullptr);
@@ -85,7 +68,7 @@ int main()
 	// Fazendo o registro da função de callback para a janela GLFW
 	glfwSetKeyCallback(window, key_callback);
 
-	// GLAD: carrega todos os ponteiros d funções da OpenGL
+	// GLAD: carrega todos os ponteiros de funções da OpenGL
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
 		std::cout << "Failed to initialize GLAD" << std::endl;
@@ -93,8 +76,8 @@ int main()
 	}
 
 	// Obtendo as informações de versão
-	const GLubyte* renderer = glGetString(GL_RENDERER); /* get renderer string */
-	const GLubyte* version = glGetString(GL_VERSION); /* version as a string */
+	const GLubyte* renderer = glGetString(GL_RENDERER);
+	const GLubyte* version = glGetString(GL_VERSION);
 	cout << "Renderer: " << renderer << endl;
 	cout << "OpenGL version supported " << version << endl;
 
@@ -272,33 +255,30 @@ int setupGeometry()
 	GLfloat vertices[] = {
 
 		//Base da pirâmide: 2 triângulos
-		//x    y    z    r    g    b
-		-0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
-		-0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
-		 0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
+		//x    y     z		r    g    b
+		-0.5, -0.5, -0.5,	1.0, 1.0, 0.0,
+		-0.5, -0.5,  0.5,	0.0, 1.0, 1.0,
+		 0.5, -0.5, -0.5,	1.0, 0.0, 1.0,
 
-		 -0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
-		  0.5, -0.5,  0.5, 0.0, 1.0, 1.0,
-		  0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
+		-0.5, -0.5,  0.5,	1.0, 1.0, 0.0,
+		 0.5, -0.5,  0.5,	0.0, 1.0, 1.0,
+		 0.5, -0.5, -0.5,	1.0, 0.0, 1.0,
 
-		 //
-		 -0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
-		  0.0,  0.5,  0.0, 1.0, 1.0, 0.0,
-		  0.5, -0.5, -0.5, 1.0, 1.0, 0.0,
+		-0.5, -0.5, -0.5,	1.0, 1.0, 0.0,
+		 0.0,  0.5,  0.0,	1.0, 1.0, 0.0,
+		 0.5, -0.5, -0.5,	1.0, 1.0, 0.0,
 
-		  -0.5, -0.5, -0.5, 1.0, 0.0, 1.0,
-		  0.0,  0.5,  0.0, 1.0, 0.0, 1.0,
-		  -0.5, -0.5, 0.5, 1.0, 0.0, 1.0,
+		-0.5, -0.5, -0.5,	1.0, 0.0, 1.0,
+		 0.0,  0.5,  0.0,	1.0, 0.0, 1.0,
+		-0.5, -0.5,  0.5,	1.0, 0.0, 1.0,
 
-		   -0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
-		  0.0,  0.5,  0.0, 1.0, 1.0, 0.0,
-		  0.5, -0.5, 0.5, 1.0, 1.0, 0.0,
+		-0.5, -0.5,  0.5,	1.0, 1.0, 0.0,
+		 0.0,  0.5,  0.0,	1.0, 1.0, 0.0,
+		 0.5, -0.5,  0.5,	1.0, 1.0, 0.0,
 
-		   0.5, -0.5, 0.5, 0.0, 1.0, 1.0,
-		  0.0,  0.5,  0.0, 0.0, 1.0, 1.0,
-		  0.5, -0.5, -0.5, 0.0, 1.0, 1.0,
-
-
+		 0.5, -0.5,  0.5,	0.0, 1.0, 1.0,
+		 0.0,  0.5,  0.0,	0.0, 1.0, 1.0,
+		 0.5, -0.5, -0.5,	0.0, 1.0, 1.0,
 	};
 
 	GLuint VBO, VAO;
