@@ -2,9 +2,9 @@
 #include <iostream>
 #include <string>
 #include <assert.h>
-#include <vector>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 using namespace std;
 
@@ -25,8 +25,30 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 // Protótipos das funções
 int setupShader();
 int setupGeometry();
-//int lerOBJ(string filepath, int& nVerts, glm::vec3 color = glm::vec3(1.0, 0.0, 1.0));
-int lerOBJ(string filepath, int& nVerts);
+
+// Estrutura para armazenar um vértice
+struct Vertex {
+    float x, y, z;
+};
+
+// Estrutura para armazenar coordenadas de textura
+struct TexCoord {
+    float s, t;
+};
+
+// Estrutura para armazenar um vetor normal
+struct Normal {
+    float x, y, z;
+};
+
+// Estrutura para armazenar uma face (triângulo)
+struct Face {
+    int v[3];    // Índices dos vértices
+    int vt[3];   // Índices das coordenadas de textura
+    int vn[3];   // Índices dos vetores normais
+};
+
+bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::vector<TexCoord>& texCoords, std::vector<Normal>& normals, std::vector<Face>& faces);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
@@ -61,6 +83,41 @@ float scale = 1.0f;
 // Função MAIN
 int main()
 {
+    std::vector<Vertex> vertices;
+    std::vector<TexCoord> texCoords;
+    std::vector<Normal> normals;
+    std::vector<Face> faces;
+    std::string filename = "../../3D_Models/Cube/cube.obj";
+
+    if (loadOBJ(filename, vertices, texCoords, normals, faces)) {
+        std::cout << "Arquivo OBJ carregado com sucesso!" << std::endl;
+
+        std::cout << "Vértices: " << std::endl;
+        for (const auto& vertex : vertices) {
+            std::cout << vertex.x << " " << vertex.y << " " << vertex.z << std::endl;
+        }
+
+        std::cout << "Coordenadas de Textura: " << std::endl;
+        for (const auto& texCoord : texCoords) {
+            std::cout << texCoord.s << " " << texCoord.t << std::endl;
+        }
+
+        std::cout << "Vetores Normais: " << std::endl;
+        for (const auto& normal : normals) {
+            std::cout << normal.x << " " << normal.y << " " << normal.z << std::endl;
+        }
+
+        std::cout << "Faces: " << std::endl;
+        for (const auto& face : faces) {
+            std::cout << face.v[0] << "/" << face.vt[0] << "/" << face.vn[0] << " "
+                << face.v[1] << "/" << face.vt[1] << "/" << face.vn[1] << " "
+                << face.v[2] << "/" << face.vt[2] << "/" << face.vn[2] << std::endl;
+        }
+    }
+    else {
+        std::cerr << "Falha ao carregar o arquivo OBJ." << std::endl;
+    }
+
     // Inicialização da GLFW
     glfwInit();
 
@@ -88,10 +145,6 @@ int main()
 
     // Definindo a geometria
     int VAO = setupGeometry();
-
-    // Carregamento do cubo OBJ
-    int nVerts;
-    GLuint cubeVAO = lerOBJ("../../3D_models/Cube/cube.obj", nVerts);
 
     // Define a matriz de projeção
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
@@ -130,8 +183,8 @@ int main()
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
         // Renderiza o cubo
-        glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, nVerts);
+        glBindVertexArray(VAO);
+        glDrawArrays(GL_TRIANGLES, 0, 36);
         glBindVertexArray(0);
 
         // Troca os buffers e desenha
@@ -333,93 +386,61 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
         scale += 0.1f;
 }
 
-int lerOBJ(string filepath, int& nVerts) {
-    ifstream fileStream(filepath, ios::in);
-    if (!fileStream.is_open()) {
-        cerr << "Não foi possível abrir o arquivo OBJ!" << endl;
-        return -1;
+// Função para carregar um arquivo OBJ
+bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::vector<TexCoord>& texCoords, std::vector<Normal>& normals, std::vector<Face>& faces) {
+    std::ifstream file(filename);
+    if (!file.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo " << filename << std::endl;
+        return false;
     }
 
-    vector<glm::vec3> vertices;
-    vector<glm::vec2> texCoords;
-    vector<glm::vec3> normals;
-    vector<int> indices;
-    vector<GLfloat> vertexBuffer;
-    string line;
+    std::string line;
+    while (std::getline(file, line)) {
+        std::istringstream ss(line);
+        std::string word;
+        ss >> word;
 
-    while (getline(fileStream, line)) {
-        stringstream ss(line);
-        string prefix;
-        ss >> prefix;
-
-        if (prefix == "v") {
-            glm::vec3 vertex;
+        if (word == "v") {
+            // Leitura dos vértices
+            Vertex vertex;
             ss >> vertex.x >> vertex.y >> vertex.z;
             vertices.push_back(vertex);
         }
-        else if (prefix == "vt") {
-            glm::vec2 texCoord;
+        else if (word == "vt") {
+            // Leitura das coordenadas de textura
+            TexCoord texCoord;
             ss >> texCoord.s >> texCoord.t;
             texCoords.push_back(texCoord);
         }
-        else if (prefix == "vn") {
-            glm::vec3 normal;
+        else if (word == "vn") {
+            // Leitura dos vetores normais
+            Normal normal;
             ss >> normal.x >> normal.y >> normal.z;
             normals.push_back(normal);
         }
-        else if (prefix == "f") {
-            string vertexData[3];
-            ss >> vertexData[0] >> vertexData[1] >> vertexData[2];
+        else if (word == "f") {
+            // Leitura das faces
+            std::string tokens[3];
+            ss >> tokens[0] >> tokens[1] >> tokens[2];
 
+            Face face;
             for (int i = 0; i < 3; i++) {
-                size_t pos = vertexData[i].find("/");
-                int vIndex = atoi(vertexData[i].substr(0, pos).c_str()) - 1;
-                indices.push_back(vIndex);
+                int pos = tokens[i].find("/");
+                std::string token = tokens[i].substr(0, pos);
+                face.v[i] = std::stoi(token) - 1;
 
-                vertexBuffer.push_back(vertices[vIndex].x);
-                vertexBuffer.push_back(vertices[vIndex].y);
-                vertexBuffer.push_back(vertices[vIndex].z);
+                tokens[i] = tokens[i].substr(pos + 1);
+                pos = tokens[i].find("/");
+                token = tokens[i].substr(0, pos);
+                face.vt[i] = std::stoi(token) - 1;
 
-                vertexData[i] = vertexData[i].substr(pos + 1);
-                pos = vertexData[i].find("/");
-                int vtIndex = atoi(vertexData[i].substr(0, pos).c_str()) - 1;
-                vertexBuffer.push_back(texCoords[vtIndex].s);
-                vertexBuffer.push_back(texCoords[vtIndex].t);
-
-                vertexData[i] = vertexData[i].substr(pos + 1);
-                int vnIndex = atoi(vertexData[i].c_str()) - 1;
-                vertexBuffer.push_back(normals[vnIndex].x);
-                vertexBuffer.push_back(normals[vnIndex].y);
-                vertexBuffer.push_back(normals[vnIndex].z);
+                tokens[i] = tokens[i].substr(pos + 1);
+                face.vn[i] = std::stoi(tokens[i]) - 1;
             }
+            faces.push_back(face);
         }
     }
 
-    fileStream.close();
-
-    GLuint VBO, VAO;
-
-    nVerts = vertexBuffer.size() / 8;
-
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, vertexBuffer.size() * sizeof(GLfloat), vertexBuffer.data(), GL_STATIC_DRAW);
-
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(1);
-
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(5 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
-
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindVertexArray(0);
-
-    return VAO;
+    file.close();
+    return true;
 }
-
