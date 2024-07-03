@@ -95,7 +95,7 @@ const GLchar* fragmentShaderSource = "#version 450\n"
 
 // Variáveis globais para armazenar as transformações
 bool rotateX = false, rotateY = false, rotateZ = false;
-float transX = 0.0f, transY = 0.0f, transZ = 0.0f;
+float transX = 0.0f, transY = 0.0f, transZ = -1.5f;
 float scale = 1.0f;
 
 // Função MAIN
@@ -180,7 +180,7 @@ int main()
     GLuint texture = loadTexture("pixelWall.png");
 
     // Define a matriz de projeção
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(90.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
     GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
     glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -198,7 +198,7 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Define a matriz de visualização
-        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -5.0f));
+        glm::mat4 view = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -05.0f));
         GLint viewLoc = glGetUniformLocation(shaderProgram, "view");
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
