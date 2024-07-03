@@ -112,8 +112,7 @@ int main()
 
         std::cout << "Vértices: " << std::endl;
         for (const auto& vertex : vertices) {
-            std::cout << vertex.x << " " << vertex.y << " " << vertex.z << " "
-                << vertex.s << " " << vertex.t << std::endl;
+            std::cout << vertex.x << " " << vertex.y << " " << vertex.z << std::endl;
         }
 
         std::cout << "Vetores Normais: " << std::endl;
@@ -502,15 +501,15 @@ bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::ve
             for (int i = 0; i < 3; i++) {
                 int pos = tokens[i].find("/");
                 std::string token = tokens[i].substr(0, pos);
-                face.v[i] = std::stoi(token) - 1;
+                face.v[i] = std::stoi(token);
 
                 tokens[i] = tokens[i].substr(pos + 1);
                 pos = tokens[i].find("/");
                 token = tokens[i].substr(0, pos);
-                face.vt[i] = std::stoi(token) - 1;
+                face.vt[i] = std::stoi(token);
 
                 tokens[i] = tokens[i].substr(pos + 1);
-                face.vn[i] = std::stoi(tokens[i]) - 1;
+                face.vn[i] = std::stoi(tokens[i]);
             }
             faces.push_back(face);
         }
