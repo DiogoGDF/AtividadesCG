@@ -92,7 +92,7 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	int nVerts;
-	GLuint VAO = loadSimpleOBJ("../../3D_Models/Naves/Destroyer05.obj", nVerts, glm::vec3(1.0, 1.0, 1.0));  // Atualize o caminho para seu arquivo OBJ
+	GLuint VAO = loadSimpleOBJ("../../3D_Models/Naves/Destroyer05.obj", nVerts, glm::vec3(1.0, 1.0, 1.0));  
 
 	Mesh destroyer;
 	destroyer.initialize(VAO, nVerts, &shader, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.02, 0.02, 0.02)); 
@@ -190,7 +190,6 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
-	//cout << xpos << " " << ypos << endl;
 	if (firstMouse)
 	{
 		lastX = xpos;
@@ -309,7 +308,7 @@ int loadSimpleOBJ(string filepath, int& nVerts, glm::vec3 color)
 
 	GLuint VBO, VAO;
 
-	nVerts = vbuffer.size() / 11; //Provisório
+	nVerts = vbuffer.size() / 11;
 
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
