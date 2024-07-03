@@ -1,4 +1,7 @@
 // Aluno: Diogo Garbinato de Fagundes       Matrícula: 1189650
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 #include <iostream>
 #include <string>
 #include <assert.h>
@@ -15,7 +18,7 @@ using namespace std;
 // GLFW
 #include <GLFW/glfw3.h>
 
-//GLM
+// GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -26,6 +29,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 // Protótipos das funções
 int setupShader();
 int setupGeometry();
+GLuint loadTexture(const char* path);
 
 // Estrutura para armazenar um vértice
 struct Vertex {
@@ -35,14 +39,14 @@ struct Vertex {
 
 // Estrutura para armazenar um vetor normal
 struct Normal {
-    float x, y, z; 
+    float x, y, z;
 };
 
 // Estrutura para armazenar uma face (triângulo)
 struct Face {
-    int v[3];    // Índices dos vértices
-    int vt[3];   // Índices das coordenadas de textura
-    int vn[3];   // Índices dos vetores normais
+    int v[3]; // Índices dos vértices
+    int vt[3]; // Índices das coordenadas de textura
+    int vn[3]; // Índices dos vetores normais
 };
 
 // Estrutura para armazenar um material
@@ -59,7 +63,6 @@ struct Material {
     std::string textureFile; // File name of the texture
 };
 
-
 bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::vector<Normal>& normals, std::vector<Face>& faces, std::unordered_map<std::string, Material>& materials);
 bool loadMTL(const std::string& filename, std::unordered_map<std::string, Material>& materials);
 
@@ -70,28 +73,30 @@ const GLuint WIDTH = 1000, HEIGHT = 1000;
 const GLchar* vertexShaderSource = "#version 450\n"
 "layout (location = 0) in vec3 position;\n"
 "layout (location = 1) in vec3 color;\n"
+"layout (location = 2) in vec2 texCoord;\n"
+"out vec2 TexCoord;\n"
 "uniform mat4 model;\n"
-"out vec4 finalColor;\n"
+"uniform mat4 projection;\n"
 "void main()\n"
 "{\n"
-"gl_Position = model * vec4(position, 1.0);\n"
-"finalColor = vec4(color, 1.0);\n"
+"gl_Position = projection * model * vec4(position, 1.0);\n"
+"TexCoord = texCoord;\n"
 "}\0";
 
 // Código fonte do Fragment Shader (em GLSL): ainda hardcoded
 const GLchar* fragmentShaderSource = "#version 450\n"
-"in vec4 finalColor;\n"
+"in vec2 TexCoord;\n"
 "out vec4 color;\n"
+"uniform sampler2D ourTexture;\n"
 "void main()\n"
 "{\n"
-"color = finalColor;\n"
+"color = texture(ourTexture, TexCoord);\n"
 "}\n\0";
 
 // Variáveis globais para armazenar as transformações
 bool rotateX = false, rotateY = false, rotateZ = false;
 float transX = 0.0f, transY = 0.0f, transZ = 0.0f;
 float scale = 1.0f;
-
 
 // Função MAIN
 int main()
@@ -125,7 +130,7 @@ int main()
 
         std::cout << "Materiais: " << std::endl;
         std::cout << "Número de materiais: " << materials.size() << std::endl;
-            for (const auto& pair : materials) {
+        for (const auto& pair : materials) {
             const auto& material = pair.second;
             std::cout << "Material: " << material.name << std::endl;
             std::cout << " Ns: " << material.Ns << std::endl;
@@ -171,6 +176,9 @@ int main()
     // Definindo a geometria
     int VAO = setupGeometry();
 
+    // Carregando a textura
+    GLuint texture = loadTexture("pixelWall.png");
+
     // Define a matriz de projeção
     glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
     GLint projLoc = glGetUniformLocation(shaderProgram, "projection");
@@ -206,6 +214,11 @@ int main()
             model = glm::rotate(model, (GLfloat)glfwGetTime() * glm::radians(50.0f), glm::vec3(0.0f, 0.0f, 1.0f));
         GLint modelLoc = glGetUniformLocation(shaderProgram, "model");
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+
+        // Ativar a textura
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glUniform1i(glGetUniformLocation(shaderProgram, "ourTexture"), 0);
 
         // Renderiza o cubo
         glBindVertexArray(VAO);
@@ -277,52 +290,52 @@ int setupGeometry()
     // Definindo os vértices e cores para o cubo
     GLfloat vertices[] = {
         // Frente
-        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  1.0f, 0.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,    1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
+         0.5f, -0.5f,  0.5f,    1.0f, 0.0f, 0.0f,   1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+         0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 0.0f,   1.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 0.0f,   0.0f, 1.0f,
+        -0.5f, -0.5f,  0.5f,    1.0f, 0.0f, 0.0f,   0.0f, 0.0f,
 
         // Trás
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+        -0.5f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+         0.5f,  0.5f, -0.5f,    0.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 0.0f,   0.0f, 0.0f,
 
         // Esquerda
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,
+        -0.5f,  0.5f,  0.5f,    0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+        -0.5f,  0.5f, -0.5f,    0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+        -0.5f, -0.5f, -0.5f,    0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+        -0.5f, -0.5f, -0.5f,    0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+        -0.5f, -0.5f,  0.5f,    0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+        -0.5f,  0.5f,  0.5f,    0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
 
         // Direita
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 1.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,    1.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+         0.5f, -0.5f, -0.5f,    1.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+         0.5f,  0.5f, -0.5f,    1.0f, 1.0f, 0.0f,   1.0f, 0.0f,
+         0.5f, -0.5f, -0.5f,    1.0f, 1.0f, 0.0f,   0.0f, 0.0f,
+         0.5f,  0.5f,  0.5f,    1.0f, 1.0f, 0.0f,   1.0f, 1.0f,
+         0.5f, -0.5f,  0.5f,    1.0f, 1.0f, 0.0f,   0.0f, 1.0f,
 
-        // Embaixo
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f, 1.0f,
+         // Embaixo
+         -0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 1.0f,   0.0f, 0.0f,
+          0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 1.0f,   1.0f, 0.0f,
+          0.5f, -0.5f,  0.5f,    0.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+          0.5f, -0.5f,  0.5f,    0.0f, 1.0f, 1.0f,   1.0f, 1.0f,
+         -0.5f, -0.5f,  0.5f,    0.0f, 1.0f, 1.0f,   0.0f, 1.0f,
+         -0.5f, -0.5f, -0.5f,    0.0f, 1.0f, 1.0f,   0.0f, 0.0f,
 
-        // Em cima
-        -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 0.0f, 1.0f
+         // Em cima
+         -0.5f,  0.5f, -0.5f,    1.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+         -0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+          0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+          0.5f,  0.5f,  0.5f,    1.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+          0.5f,  0.5f, -0.5f,    1.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+         -0.5f,  0.5f, -0.5f,    1.0f, 0.0f, 1.0f,   0.0f, 1.0f
     };
 
     GLuint VBO, VAO;
@@ -352,12 +365,16 @@ int setupGeometry()
     // Deslocamento a partir do byte zero
 
     // Atributo posição (x, y, z)
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);
     glEnableVertexAttribArray(0);
 
     // Atributo cor (r, g, b)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
+
+    // Atributo coordenadas de textura (s, t)
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)(6 * sizeof(GLfloat)));
+    glEnableVertexAttribArray(2);
 
     // Observe que isso é permitido, a chamada para glVertexAttribPointer registrou o VBO como o objeto de buffer de vértice
     // atualmente vinculado - para que depois possamos desvincular com segurança
@@ -367,6 +384,40 @@ int setupGeometry()
     glBindVertexArray(0);
 
     return VAO;
+}
+
+// Função para carregar uma textura
+GLuint loadTexture(const char* path)
+{
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+    // Defina os parâmetros da textura
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    // Carregue a imagem, crie a textura e gere mipmaps
+    int width, height, nrChannels;
+    unsigned char* data = stbi_load(path, &width, &height, &nrChannels, 0);
+    if (data)
+    {
+        GLenum format = GL_RGB;
+        if (nrChannels == 1)
+            format = GL_RED;
+        else if (nrChannels == 3)
+            format = GL_RGB;
+        else if (nrChannels == 4)
+            format = GL_RGBA;
+        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+        std::cout << "Failed to load texture" << std::endl;
+    }
+    stbi_image_free(data);
+    return textureID;
 }
 
 // Função de callback de teclado
