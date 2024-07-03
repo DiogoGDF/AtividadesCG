@@ -34,7 +34,11 @@ GLuint loadTexture(const char* path);
 // Estrutura para armazenar um vértice
 struct Vertex {
     float x, y, z; // Coordenadas do vértice
-    float s, t; // Coordenadas de textura
+};
+
+// Estrutura para armazenar coordenadas de textura
+struct TexCoord {
+    float s, t;
 };
 
 // Estrutura para armazenar um vetor normal
@@ -63,7 +67,7 @@ struct Material {
     std::string textureFile; // File name of the texture
 };
 
-bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::vector<Normal>& normals, std::vector<Face>& faces, std::unordered_map<std::string, Material>& materials);
+bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::vector<TexCoord>& texCoords, std::vector<Normal>& normals, std::vector<Face>& faces, std::unordered_map<std::string, Material>& materials);
 bool loadMTL(const std::string& filename, std::unordered_map<std::string, Material>& materials);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
@@ -102,17 +106,23 @@ float scale = 1.0f;
 int main()
 {
     std::vector<Vertex> vertices;
+    std::vector<TexCoord> texCoords;
     std::vector<Normal> normals;
     std::vector<Face> faces;
     std::unordered_map<std::string, Material> materials;
 
     std::string objFilename = "cube.obj";
-    if (loadOBJ(objFilename, vertices, normals, faces, materials)) {
+    if (loadOBJ(objFilename, vertices, texCoords, normals, faces, materials)) {
         std::cout << "Arquivo OBJ carregado com sucesso!" << std::endl;
 
         std::cout << "Vértices: " << std::endl;
         for (const auto& vertex : vertices) {
             std::cout << vertex.x << " " << vertex.y << " " << vertex.z << std::endl;
+        }
+
+        std::cout << "Coordenadas de Textura: " << std::endl;
+        for (const auto& texCoord : texCoords) {
+            std::cout << texCoord.s << " " << texCoord.t << std::endl;
         }
 
         std::cout << "Vetores Normais: " << std::endl;
@@ -462,7 +472,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
 }
 
 // Função para carregar um arquivo OBJ
-bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::vector<Normal>& normals, std::vector<Face>& faces, std::unordered_map<std::string, Material>& materials) {
+bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::vector<TexCoord>& texCoords, std::vector<Normal>& normals, std::vector<Face>& faces, std::unordered_map<std::string, Material>& materials){
     std::ifstream file(filename);
     if (!file.is_open()) {
         std::cerr << "Erro ao abrir o arquivo " << filename << std::endl;
@@ -481,12 +491,9 @@ bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::ve
             vertices.push_back(vertex);
         }
         else if (word == "vt") {
-            float s, t;
-            ss >> s >> t;
-            if (!vertices.empty()) {
-                vertices.back().s = s;
-                vertices.back().t = t;
-            }
+            TexCoord texCoord;
+            ss >> texCoord.s >> texCoord.t;
+            texCoords.push_back(texCoord);
         }
         else if (word == "vn") {
             Normal normal;
