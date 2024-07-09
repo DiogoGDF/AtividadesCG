@@ -23,11 +23,26 @@ using namespace std;
 #include "Shader.h"
 #include "Mesh.h"
 
+// Estrutura para armazenar um material
+struct Material {
+	std::string name;
+	float Ns; // Exponent for specular highlight
+	float Ka[3]; // Ambient reflectivity
+	float Kd[3]; // Diffuse reflectivity
+	float Ks[3]; // Specular reflectivity
+	float Ke[3]; // Emissive coefficient
+	float Ni; // Optical density (index of refraction)
+	float d; // Dissolve (transparency)
+	int illum; // Illumination model
+	std::string textureFile; // File name of the texture
+};
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
 // Protótipos das funções
 int loadSimpleOBJ(string filepath, int& nVerts, glm::vec3 color = glm::vec3(1.0, 0.0, 1.0));
+int loadMTL(string filepath, std::vector<Material>& materials);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 1000;
@@ -42,6 +57,8 @@ bool firstMouse = true;
 float lastX, lastY;
 float sensitivity = 0.05;
 float pitch = 0.0, yaw = -90.0;
+string base_path = "../../3D_Models/Naves/";
+std::vector<Material> materials;
 
 // Função MAIN
 int main()
@@ -92,16 +109,16 @@ int main()
 	glEnable(GL_DEPTH_TEST);
 
 	int nVerts;
-	GLuint VAO = loadSimpleOBJ("../../3D_Models/Naves/Destroyer05.obj", nVerts, glm::vec3(1.0, 1.0, 1.0));  
+	GLuint VAO = loadSimpleOBJ(base_path + "Destroyer05.obj", nVerts, glm::vec3(1.0, 1.0, 1.0));  
 
 	Mesh destroyer;
 	destroyer.initialize(VAO, nVerts, &shader, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.02, 0.02, 0.02)); 
 
 	//Definindo as propriedades do material da superfície
-	shader.setFloat("ka", 0.2);
-	shader.setFloat("kd", 0.5);
-	shader.setFloat("ks", 0.5);
-	shader.setFloat("q", 10.0);
+	shader.setFloat("ka", materials[0].Ka[0]);
+	shader.setFloat("kd", materials[0].Kd[0]);
+	shader.setFloat("ks", materials[0].Ks[0]);
+	shader.setFloat("ns", max(materials[0].Ns, 0.0f));
 
 	//Definindo a fonte de luz pontual
 	shader.setVec3("lightPos", -2.0, 10.0, 2.0);
@@ -298,6 +315,14 @@ int loadSimpleOBJ(string filepath, int& nVerts, glm::vec3 color)
 					vbuffer.push_back(normals[index].z);
 				}
 			}
+			if (word == "mtllib") 
+			{
+				std::string mtlFilename;
+				ssline >> mtlFilename;
+				//std::cout << "Carregando MTL: " << base_path + mtlFilename << std::endl;
+				loadMTL(base_path + mtlFilename, materials);
+			}
+
 		}
 	}
 	else
@@ -333,4 +358,73 @@ int loadSimpleOBJ(string filepath, int& nVerts, glm::vec3 color)
 	glBindVertexArray(0);
 
 	return VAO;
+}
+
+int loadMTL(string filepath, std::vector<Material>& materials){
+	std::ifstream file(filepath);
+	if (!file.is_open()) {
+		std::cerr << "Erro ao abrir o arquivo " << filepath << std::endl;
+		return false;
+	}
+
+	std::string line;
+	Material currentMaterial;
+	while (std::getline(file, line)) {
+		std::istringstream ss(line);
+		std::string word;
+		ss >> word;
+
+		if (word == "newmtl") {
+			if (!currentMaterial.name.empty()) {
+				materials.push_back(currentMaterial);
+				//std::cout << "Material armazenado: " << currentMaterial.name << std::endl;
+			}
+			currentMaterial = Material(); // Reset the current material
+			ss >> currentMaterial.name;
+			//currentMaterial.name = "Material";
+			std::cout << "Material : " << currentMaterial.name << std::endl;
+		}
+		else if (word == "Ns") {
+			ss >> currentMaterial.Ns;
+			cout << "Ns: " << currentMaterial.Ns << std::endl;
+		}
+		else if (word == "Ka") {
+			ss >> currentMaterial.Ka[0] >> currentMaterial.Ka[1] >> currentMaterial.Ka[2];
+			cout << "Ka: " << currentMaterial.Ka[0] << " " << currentMaterial.Ka[1] << " " << currentMaterial.Ka[2] << std::endl;
+		}
+		else if (word == "Kd") {
+			ss >> currentMaterial.Kd[0] >> currentMaterial.Kd[1] >> currentMaterial.Kd[2];
+			cout << "Kd: " << currentMaterial.Kd[0] << " " << currentMaterial.Kd[1] << " " << currentMaterial.Kd[2] << std::endl;
+		}
+		else if (word == "Ks") {
+			ss >> currentMaterial.Ks[0] >> currentMaterial.Ks[1] >> currentMaterial.Ks[2];
+			cout << "Ks: " << currentMaterial.Ks[0] << " " << currentMaterial.Ks[1] << " " << currentMaterial.Ks[2] << std::endl;
+		}
+		else if (word == "Ke") {
+			ss >> currentMaterial.Ke[0] >> currentMaterial.Ke[1] >> currentMaterial.Ke[2];
+			cout << "Ke: " << currentMaterial.Ke[0] << " " << currentMaterial.Ke[1] << " " << currentMaterial.Ke[2] << std::endl;
+		}
+		else if (word == "Ni") {
+			ss >> currentMaterial.Ni;
+			cout << "Ni: " << currentMaterial.Ni << std::endl;
+		}
+		else if (word == "d") {
+			ss >> currentMaterial.d;
+			cout << "d: " << currentMaterial.d << std::endl;
+		}
+		else if (word == "illum") {
+			ss >> currentMaterial.illum;
+			cout << "illum: " << currentMaterial.illum << std::endl;
+		}
+		else if (word == "map_Kd") {
+			ss >> currentMaterial.textureFile;
+			cout << "map_Kd: " << currentMaterial.textureFile << std::endl;
+		}
+	}
+
+	std::cout << "Textura armazenada: " << currentMaterial.textureFile << std::endl;
+	materials.push_back(currentMaterial);
+
+	file.close();
+	return 0;
 }

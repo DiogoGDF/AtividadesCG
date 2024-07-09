@@ -11,7 +11,7 @@ out vec4 color;
 uniform float ka;
 uniform float kd;
 uniform float ks;
-uniform float q;
+uniform float ns;
 
 //Propriedades da fonte de luz
 uniform vec3 lightPos;
@@ -35,7 +35,7 @@ void main()
 	vec3 V = normalize(cameraPos - fragPos);
 	vec3 R = normalize(reflect(-L,N));
 	float spec = max(dot(R,V),0.0);
-	spec = pow(spec,q);
+	spec = pow(spec,ns);
 	vec3 specular = ks * spec * lightColor;
 
 	vec3 result = (ambient + diffuse) * finalColor + specular;
