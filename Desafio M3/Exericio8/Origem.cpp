@@ -71,7 +71,7 @@ bool loadOBJ(const std::string& filename, std::vector<Vertex>& vertices, std::ve
 bool loadMTL(const std::string& filename, std::unordered_map<std::string, Material>& materials);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
-const GLuint WIDTH = 1000, HEIGHT = 1000;
+const GLuint WIDTH = 1000, HEIGHT = 800;
 
 // Código fonte do Vertex Shader (em GLSL): ainda hardcoded
 const GLchar* vertexShaderSource = "#version 450\n"
