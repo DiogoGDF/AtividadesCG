@@ -116,15 +116,10 @@ int main()
     destroyer.initialize(VAO, nVerts, &shader, glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.02, 0.02, 0.02));
 
     // Definindo as propriedades do material da superfície
-    //shader.setFloat("ka", materials[0].Ka[0]);
-    //shader.setFloat("kd", materials[0].Kd[0]);
-    //shader.setFloat("ks", materials[0].Ks[0]);
-    //shader.setFloat("ns", max(materials[0].Ns, 0.0f));
-
-    shader.setFloat("ka", 0.2);
-    shader.setFloat("kd", 0.5);
-    shader.setFloat("ks", 0.5);
-    shader.setFloat("ns", 10.0);
+    shader.setFloat("ka", materials[0].Ka[0]);
+    shader.setFloat("kd", materials[0].Kd[0]);
+    shader.setFloat("ks", materials[0].Ks[0]);
+    shader.setFloat("ns", max(materials[0].Ns, 0.0f));
 
     // Definindo a fonte de luz pontual
     shader.setVec3("lightPos", -2.0, 10.0, 2.0);
@@ -140,8 +135,14 @@ int main()
         // Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
         glfwPollEvents();
 
-        // Limpa o buffer de cor
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f); // cor de fundo
+        // Obtendo a cor de fundo do comentário
+        float red = 18.0f / 255.0f;
+        float green = 18.0f / 255.0f;
+        float blue = 18.0f / 255.0f;
+
+        glClearColor(red, green, blue, 1.0f); // cor de fundo rgb(18, 18, 18)
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glLineWidth(10);
