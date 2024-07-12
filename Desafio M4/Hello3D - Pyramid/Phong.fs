@@ -1,44 +1,38 @@
-//Código fonte do Fragment Shader (em GLSL): ainda hardcoded
-#version 450
+#version 460 core
 
-in vec3 finalColor;
-in vec3 fragPos;
-in vec3 scaledNormal;
+out vec4 FragColor;
 
-out vec4 color;
+in vec3 FragPos;  
+in vec3 Normal;  
+in vec2 TexCoords;
 
-//Propriedades da superficie
+uniform vec3 lightPos; 
+uniform vec3 viewPos; 
+uniform vec3 lightColor;
+uniform sampler2D texture1;
+
 uniform float ka;
 uniform float kd;
 uniform float ks;
-uniform float q;
-
-//Propriedades da fonte de luz
-uniform vec3 lightPos;
-uniform vec3 lightColor;
-
-//Posição da Camera
-uniform vec3 cameraPos;
+uniform float ns;
 
 void main()
 {
-	//Cálculo da parcela de iluminação ambiente
-	vec3 ambient = ka * lightColor;
-
-	//Cálculo da parcela de iluminação difusa
-	vec3 N = normalize(scaledNormal);
-	vec3 L = normalize(lightPos - fragPos);
-	float diff = max(dot(N,L),0.0);
-	vec3 diffuse = kd * diff * lightColor;
-
-	//Cálculo da parcela de iluminação especular
-	vec3 V = normalize(cameraPos - fragPos);
-	vec3 R = normalize(reflect(-L,N));
-	float spec = max(dot(R,V),0.0);
-	spec = pow(spec,q);
-	vec3 specular = ks * spec * lightColor;
-
-	vec3 result = (ambient + diffuse) * finalColor + specular;
-
-	color = vec4(result,1.0);
+    // ambient
+    vec3 ambient = ka * lightColor;
+  	
+    // diffuse 
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(lightPos - FragPos);
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuse = kd * diff * lightColor;
+    
+    // specular
+    vec3 viewDir = normalize(viewPos - FragPos);
+    vec3 reflectDir = reflect(-lightDir, norm);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), ns);
+    vec3 specular = ks * spec * lightColor;  
+        
+    vec3 result = (ambient + diffuse + specular) * texture(texture1, TexCoords).rgb;
+    FragColor = vec4(result, 1.0);
 }
