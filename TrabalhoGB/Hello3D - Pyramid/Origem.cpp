@@ -6,7 +6,7 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include "json.hpp" // Inclua a biblioteca JSON baixada
+#include "json.hpp" 
 
 using json = nlohmann::json;
 using namespace std;
@@ -29,23 +29,25 @@ using namespace std;
 // Estrutura para armazenar um material
 struct Material {
     std::string name;
-    float Ns; // Exponent for specular highlight
-    float Ka[3]; // Ambient reflectivity
-    float Kd[3]; // Diffuse reflectivity
-    float Ks[3]; // Specular reflectivity
-    float Ke[3]; // Emissive coefficient
-    float Ni; // Optical density (index of refraction)
-    float d; // Dissolve (transparency)
-    int illum; // Illumination model
-    std::string textureFile; // File name of the texture
+    float Ns; // Expoente para destaque especular
+    float Ka[3]; // Reflectividade ambiente
+    float Kd[3]; // Reflectividade difusa
+    float Ks[3]; // Reflectividade especular
+    float Ke[3]; // Coeficiente emissivo
+    float Ni; // Densidade óptica (índice de refração)
+    float d; // Dissolução (transparência)
+    int illum; // Modelo de iluminação
+    std::string textureFile; // Nome do arquivo da textura
 };
 
+// Estrutura para armazenar uma fonte de luz
 struct Light {
     glm::vec3 position;
     glm::vec3 color;
     float intensity;
 };
 
+// Funções de callback para o teclado e o mouse
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
@@ -58,17 +60,19 @@ json readJSONConfig(const std::string& filepath);
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 800;
 
-glm::vec3 cameraPos = glm::vec3(0.0, 0.0, 3.0);
-glm::vec3 cameraFront = glm::vec3(0.0, 0.0, -1.0);
-glm::vec3 cameraUp = glm::vec3(0.0, 1.0, 0.0);
+// Variáveis globais
+glm::vec3 cameraPos;
+glm::vec3 cameraFront;
+glm::vec3 cameraUp;
 
 bool firstMouse = true;
 float lastX, lastY;
 float sensitivity = 0.05;
 float pitch = 0.0, yaw = -90.0;
+
 string base_path = "./Objetos/";
 std::vector<Material> materials;
-Light light; // Apenas uma fonte de luz
+Light light;
 
 // Função MAIN
 int main()
@@ -120,6 +124,7 @@ int main()
     glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, nearPlane, farPlane);
     shader.setMat4("projection", glm::value_ptr(projection));
 
+    // Habilitar o teste de profundidade
     glEnable(GL_DEPTH_TEST);
 
     // Carregar e inicializar objetos a partir do arquivo de configuração
@@ -152,12 +157,11 @@ int main()
         // Checa se houveram eventos de input (key pressed, mouse moved etc.) e chama as funções de callback correspondentes
         glfwPollEvents();
 
-        // Obtendo a cor de fundo do comentário
+        // Obtendo a cor de fundo (RGB 12, 12, 12)
         float red = 12.0f / 255.0f;
         float green = 12.0f / 255.0f;
         float blue = 12.0f / 255.0f;
-
-        glClearColor(red, green, blue, 1.0f); // cor de fundo rgb(18, 18, 18)
+        glClearColor(red, green, blue, 1.0f);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -228,6 +232,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 }
 
+// Função de callback de mouse
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)
@@ -256,6 +261,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
     cameraFront = glm::normalize(front);
 }
 
+// Função para carregar texturas
 int loadTexture(string path)
 {
     GLuint texID;
@@ -422,6 +428,7 @@ int loadSimpleOBJ(string filepath, int& nVerts, glm::vec3 color)
     return VAO;
 }
 
+// Função para carregar o arquivo MTL
 int loadMTL(string filepath, std::vector<Material>& materials)
 {
     std::ifstream file(filepath);
@@ -479,6 +486,7 @@ int loadMTL(string filepath, std::vector<Material>& materials)
     return 0;
 }
 
+// Função para ler um arquivo JSON
 json readJSONConfig(const std::string& filepath) {
     std::ifstream file(filepath);
     if (!file.is_open()) {
