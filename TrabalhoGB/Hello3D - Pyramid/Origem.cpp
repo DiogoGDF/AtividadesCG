@@ -6,7 +6,9 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
+#include "json.hpp" // Inclua a biblioteca JSON baixada
 
+using json = nlohmann::json;
 using namespace std;
 
 // GLAD
@@ -38,6 +40,12 @@ struct Material {
     std::string textureFile; // File name of the texture
 };
 
+struct Light {
+    glm::vec3 position;
+    glm::vec3 color;
+    float intensity;
+};
+
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 
@@ -45,6 +53,7 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 int loadTexture(string path);
 int loadSimpleOBJ(string filepath, int& nVerts, glm::vec3 color = glm::vec3(1.0, 0.0, 1.0));
 int loadMTL(string filepath, std::vector<Material>& materials);
+json readJSONConfig(const std::string& filepath);
 
 // Dimensões da janela (pode ser alterado em tempo de execução)
 const GLuint WIDTH = 1000, HEIGHT = 800;
@@ -59,6 +68,7 @@ float sensitivity = 0.05;
 float pitch = 0.0, yaw = -90.0;
 string base_path = "./Objetos/";
 std::vector<Material> materials;
+Light light; // Apenas uma fonte de luz
 
 // Função MAIN
 int main()
@@ -95,37 +105,46 @@ int main()
     Shader shader("Phong.vs", "Phong.fs");
     glUseProgram(shader.ID);
 
-    // Matriz de view -- posição e orientação da câmera
-    glm::mat4 view = glm::lookAt(glm::vec3(0.0, 0.0, 3.0), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
-    shader.setMat4("view", value_ptr(view));
+    // Ler arquivo de configuração
+    json config = readJSONConfig("scene_config.json");
 
-    // Matriz de projeção perspectiva - definindo o volume de visualização (frustum)
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)width / (float)height, 0.1f, 100.0f);
+    // Definir a posição e orientação da câmera
+    cameraPos = glm::vec3(config["camera"]["position"][0], config["camera"]["position"][1], config["camera"]["position"][2]);
+    cameraFront = glm::vec3(config["camera"]["front"][0], config["camera"]["front"][1], config["camera"]["front"][2]);
+    cameraUp = glm::vec3(config["camera"]["up"][0], config["camera"]["up"][1], config["camera"]["up"][2]);
+
+    // Definir o frustrum da câmera
+    float fov = config["camera"]["frustum"][0];
+    float nearPlane = config["camera"]["frustum"][1];
+    float farPlane = config["camera"]["frustum"][2];
+    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)width / (float)height, nearPlane, farPlane);
     shader.setMat4("projection", glm::value_ptr(projection));
 
     glEnable(GL_DEPTH_TEST);
 
-    // Carregar e inicializar múltiplos objetos
-    int nVerts1, nVerts2, nVerts3, nVerts4, nVerts5;
-    GLuint VAO1 = loadSimpleOBJ(base_path + "terra.obj", nVerts1, glm::vec3(1.0, 1.0, 1.0));
-    GLuint VAO2 = loadSimpleOBJ(base_path + "lua.obj", nVerts2, glm::vec3(0.8, 0.8, 0.8));
-    GLuint VAO3 = loadSimpleOBJ(base_path + "Destroyer05.obj", nVerts3, glm::vec3(1.0, 1.0, 1.0));
-    GLuint VAO4 = loadSimpleOBJ(base_path + "LightCruiser05.obj", nVerts4, glm::vec3(1.0, 1.0, 1.0));
-    GLuint VAO5 = loadSimpleOBJ(base_path + "easter_egg.obj", nVerts5, glm::vec3(0.6, 0.6, 0.6));
+    // Carregar e inicializar objetos a partir do arquivo de configuração
+    std::vector<Mesh> objects;
+    std::vector<GLuint> textures;
+    for (const auto& obj : config["objects"]) {
+        int nVerts;
+        GLuint VAO = loadSimpleOBJ(base_path + obj["file"].get<std::string>(), nVerts);
+        glm::vec3 position = glm::vec3(obj["position"][0], obj["position"][1], obj["position"][2]);
+        glm::vec3 scale = glm::vec3(obj["scale"][0], obj["scale"][1], obj["scale"][2]);
+        float rotation = obj["rotation"];
+        glm::vec3 axis = glm::vec3(obj["axis"][0], obj["axis"][1], obj["axis"][2]);
 
-    Mesh object1, object2, object3, object4, object5;
-    object1.initialize(VAO1, nVerts1, &shader, glm::vec3(0.0, 0.0, -35.0), glm::vec3(16.0, 16.0, 16.0));
-    object2.initialize(VAO2, nVerts2, &shader, glm::vec3(30.0, 15.0, -32.0), glm::vec3(5.4, 5.4, 5.4));
-    object3.initialize(VAO3, nVerts3, &shader, glm::vec3(2.0, 0.5, -4.0), glm::vec3(0.02, 0.02, 0.02), 15.0f);
-    object4.initialize(VAO4, nVerts4, &shader, glm::vec3(-0.5, -0.5, -4.0), glm::vec3(0.02, 0.02, 0.02), 5.0f);
-    object5.initialize(VAO5, nVerts5, &shader, glm::vec3(0.0, 0.0, -30.0), glm::vec3(0.1, 0.1, 0.1));
+        Mesh object;
+        object.initialize(VAO, nVerts, &shader, position, scale, rotation, axis);
+        objects.push_back(object);
 
-    // Carregar texturas diferentes
-    GLuint texID1 = loadTexture(base_path + materials[0].textureFile);
-    GLuint texID2 = loadTexture(base_path + materials[1].textureFile);
-    GLuint texID3 = loadTexture(base_path + materials[2].textureFile);
-    GLuint texID4 = loadTexture(base_path + materials[3].textureFile);
-    GLuint texID5 = loadTexture(base_path + materials[4].textureFile);
+        std::string textureFile = base_path + materials[objects.size() - 1].textureFile;
+        GLuint textureID = loadTexture(textureFile);
+        textures.push_back(textureID);
+    }
+
+    // Carregar e inicializar a luz a partir do arquivo de configuração
+    light.position = glm::vec3(config["light"]["position"][0], config["light"]["position"][1], config["light"]["position"][2]);
+    light.color = glm::vec3(config["light"]["color"][0], config["light"]["color"][1], config["light"]["color"][2]);
 
     // Loop da aplicação - "game loop"
     while (!glfwWindowShouldClose(window))
@@ -152,95 +171,32 @@ int main()
         // Atualizando o shader com a posição da câmera
         shader.setVec3("cameraPos", cameraPos.x, cameraPos.y, cameraPos.z);
 
-        // Configurar e desenhar o primeiro objeto
-        shader.setFloat("ka", materials[0].Ka[0]);
-        shader.setFloat("kd", materials[0].Kd[0]);
-        shader.setFloat("ks", materials[0].Ks[0]);
-        shader.setFloat("ns", max(materials[0].Ns, 0.0f));
+        // Configurar luz
+        shader.setVec3("lightPos", light.position.x, light.position.y, light.position.z);
+        shader.setVec3("lightColor", light.color.x, light.color.y, light.color.z);
 
-        //shader.setVec3("lightPos", -2.0, 10.0, 2.0);
-        //shader.setVec3("lightColor", 1.0, 1.0, 1.0);
+        // Desenhar todos os objetos
+        for (size_t i = 0; i < objects.size(); ++i) {
+            shader.setFloat("ka", materials[i].Ka[0]);
+            shader.setFloat("kd", materials[i].Kd[0]);
+            shader.setFloat("ks", materials[i].Ks[0]);
+            shader.setFloat("ns", std::max(materials[i].Ns, 0.0f));
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texID1);
-        shader.setInt("texture1", 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, textures[i]);
+            shader.setInt("texture1", 0);
 
-        object1.update();
-        object1.draw();
-
-        // Configurar e desenhar o segundo objeto
-        shader.setFloat("ka", materials[1].Ka[0]);
-        shader.setFloat("kd", materials[1].Kd[0]);
-        shader.setFloat("ks", materials[1].Ks[0]);
-        shader.setFloat("ns", max(materials[1].Ns, 0.0f));
-
-        //shader.setVec3("lightPos", 2.0, 5.0, -3.0);
-        //shader.setVec3("lightColor", 0.8, 0.8, 0.8);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texID2);
-        shader.setInt("texture1", 0);
-
-        object2.update();
-        object2.draw();
-
-        // Configurar e desenhar o terceiro objeto
-        shader.setFloat("ka", materials[2].Ka[0]);
-        shader.setFloat("kd", materials[2].Kd[0]);
-        shader.setFloat("ks", materials[2].Ks[0]);
-        shader.setFloat("ns", max(materials[2].Ns, 0.0f));
-
-        //shader.setVec3("lightPos", -3.0, 2.0, -5.0);
-        //shader.setVec3("lightColor", 0.9, 0.9, 0.9);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texID3);
-        shader.setInt("texture1", 0);
-
-        object3.update();
-        object3.draw();
-
-        // Configurar e desenhar o quarto objeto
-        shader.setFloat("ka", materials[3].Ka[0]);
-        shader.setFloat("kd", materials[3].Kd[0]);
-        shader.setFloat("ks", materials[3].Ks[0]);
-        shader.setFloat("ns", max(materials[3].Ns, 0.0f));
-
-        //shader.setVec3("lightPos", 20.0, 3.0, -2.0);
-        //shader.setVec3("lightColor", 1.0, 1.0, 1.0);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texID4);
-        shader.setInt("texture1", 0);
-
-        object4.update();
-        object4.draw();
-
-        // Configurar e desenhar o quinto objeto
-        shader.setFloat("ka", materials[4].Ka[0]);
-        shader.setFloat("kd", materials[4].Kd[0]);
-        shader.setFloat("ks", materials[4].Ks[0]);
-        shader.setFloat("ns", max(materials[4].Ns, 0.0f));
-
-        shader.setVec3("lightPos", 20.0, 0.0, -2.5);
-        shader.setVec3("lightColor", 1.0, 1.0, 1.0);
-
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texID5);
-        shader.setInt("texture1", 0);
-
-        object5.update();
-        object5.draw();
+            objects[i].update();
+            objects[i].draw();
+        }
 
         // Troca os buffers da tela
         glfwSwapBuffers(window);
     }
     // Pede pra OpenGL desalocar os buffers
-    glDeleteVertexArrays(1, &VAO1);
-    glDeleteVertexArrays(1, &VAO2);
-    glDeleteVertexArrays(1, &VAO3);
-    glDeleteVertexArrays(1, &VAO4);
-    glDeleteVertexArrays(1, &VAO5);
+    for (auto& obj : objects) {
+        glDeleteVertexArrays(1, &obj.VAO);
+    }
     // Finaliza a execução da GLFW, limpando os recursos alocados por ela
     glfwTerminate();
     return 0;
@@ -521,4 +477,16 @@ int loadMTL(string filepath, std::vector<Material>& materials)
 
     file.close();
     return 0;
+}
+
+json readJSONConfig(const std::string& filepath) {
+    std::ifstream file(filepath);
+    if (!file.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo de configuração " << filepath << std::endl;
+        return json();
+    }
+
+    json config;
+    file >> config;
+    return config;
 }

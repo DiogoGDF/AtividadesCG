@@ -1,0 +1,49 @@
+{
+  "objects": [
+    {
+      "file": "terra.obj",
+      "position": [ 0.0, 0.0, -35.0 ],
+      "scale": [ 16.0, 16.0, 16.0 ],
+      "rotation": 0.0,
+      "axis": [ 0.0, 0.0, 1.0 ]
+    },
+    {
+      "file": "lua.obj",
+      "position": [ 30.0, 15.0, -32.0 ],
+      "scale": [ 5.4, 5.4, 5.4 ],
+      "rotation": 0.0,
+      "axis": [ 0.0, 0.0, 1.0 ]
+    },
+    {
+      "file": "Destroyer05.obj",
+      "position": [ 2.0, 0.5, -4.0 ],
+      "scale": [ 0.02, 0.02, 0.02 ],
+      "rotation": 15.0,
+      "axis": [ 0.0, 0.0, 1.0 ]
+    },
+    {
+      "file": "LightCruiser05.obj",
+      "position": [ -0.5, -0.5, -4.0 ],
+      "scale": [ 0.02, 0.02, 0.02 ],
+      "rotation": 5.0,
+      "axis": [ 0.0, 0.0, 1.0 ]
+    },
+    {
+      "file": "easter_egg.obj",
+      "position": [ 0.0, 0.0, -30.0 ],
+      "scale": [ 0.1, 0.1, 0.1 ],
+      "rotation": 0.0,
+      "axis": [ 0.0, 0.0, 1.0 ]
+    }
+  ],
+  "light": {
+    "position": [ -2.0, 10.0, 2.0 ],
+    "color": [ 1.0, 1.0, 1.0 ]
+  },
+  "camera": {
+    "position": [ 0.0, 0.0, 3.0 ],
+    "front": [ 0.0, 0.0, -1.0 ],
+    "up": [ 0.0, 1.0, 0.0 ],
+    "frustum": [ 45.0, 0.1, 100.0 ]
+  }
+}
